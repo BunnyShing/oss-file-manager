@@ -1,0 +1,43 @@
+{
+  "name": "oss-file-manager",
+  "description": "基于 Vue、ElementUI、OSS BrowserJS、OSS STS 的OSS管理组件",
+  "keywords": ["vue","oss","upload","file manager","element-ui"],
+  "version": "1.0.4",
+  "author": "hejincheng<335836557@qq.com>",
+  "license": "MIT",
+  "private": false,
+  "main": "./dist/oss-file-manager.js",
+  "homepage": "https://github.com/BunnyShing/oss-file-manager",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BunnyShing/oss-file-manager.git"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
+    "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
+  },
+  "dependencies": {
+    "ali-oss": "^6.17.1",
+    "element-ui": "^2.13.2",
+    "vue": "^2.6.14"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 8"
+  ],
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-stage-3": "^6.24.1",
+    "cross-env": "^5.0.5",
+    "css-loader": "^0.28.7",
+    "file-loader": "^1.1.4",
+    "sass-loader": "^6.0.6",
+    "vue-loader": "^13.0.5",
+    "vue-template-compiler": "^2.4.4",
+    "webpack": "^3.6.0",
+    "webpack-dev-server": "^2.9.1"
+  }
+}
