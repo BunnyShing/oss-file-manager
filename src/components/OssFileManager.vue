@@ -2,7 +2,7 @@
   <div v-loading="loading">
     <div style="display: flex;margin:0.5rem 0;">
       <el-button v-if="rootDir !== prefix && prefix.length > rootDir.length" icon="el-icon-back" size="mini" style="padding: 0 0.5rem;" @click="prefix = breadcrumb.slice(0,-1).join('/') + '/'"></el-button>
-      <el-button icon="el-icon-refresh" size="mini" style="padding: 0 0.5rem;" @click="refresh"></el-button>
+      <el-button icon="el-icon-refresh" size="mini" style="padding: 0 0.5rem;" @click="list(true)"></el-button>
       <div style="padding: 0.2rem 0rem;margin: 0 0.5rem;">当前目录路径：</div>
       <el-breadcrumb style="font-size: 1rem;width: 65%;padding: 0.2rem 0.5rem;border:1px solid rgb(0 0 0 / 20%);border-radius: 0.2rem;" separator-class="el-icon-arrow-right">
         <el-breadcrumb-item v-for="(item,index) in breadcrumb" :key="index" v-show="index >= rootDirArr.length - 1 || !hiddenRoot">
@@ -26,13 +26,13 @@
         <el-button slot="reference" size="mini" type="primary" style="margin: 0 0.5rem;">{{uploadingList.length > 0 ? '正在上传：' + uploadingList.length : '上传列表'}}</el-button>
       </el-popover>
     </div>
-    <div style="display: flex">
+    <div style="display: flex;">
       <el-button v-show="allowUploadFolder" size="mini" @click="createDir">创建文件夹</el-button>
-      <el-upload ref="uploadFile" :http-request="handleUpload" action multiple :show-file-list="false">
-        <el-button size="mini" style="margin: 0 0.5rem;">上传文件</el-button>
-      </el-upload>
       <el-upload ref="uploadFolder" :http-request="handleUpload" action multiple :show-file-list="false">
-        <el-button v-show="allowUploadFolder" size="mini" @click="uploadFolder" >上传文件夹</el-button>
+        <el-button v-show="allowUploadFolder" size="mini" @click="uploadFolder" style="margin: 0 0.5rem;">上传文件夹</el-button>
+      </el-upload>
+      <el-upload ref="uploadFile" :http-request="handleUpload" action multiple :show-file-list="false">
+        <el-button size="mini">上传文件</el-button>
       </el-upload>
     </div>
     <el-table style="min-height: 100vh" :data="objects" id="draggle-area" v-loading="dragCover" element-loading-background="rgba(0, 0, 0, 0.5)" element-loading-text="松开上传" element-loading-spinner="el-icon-upload2">
@@ -154,7 +154,6 @@
     data() {
       return {
         dragCover: false,
-        listLoading: false, // 加入列表加载时标记，防止上传多个小文件时，频发触发list方法导致列表对象重复的bug
         loading: false,
         uploadingList: [],
         prefix: this.rootDir,
@@ -184,7 +183,6 @@
       }
     },
     mounted(){
-      this.list()
       // 1.文件第一次进入拖动区时，触发 dragging 事件
       // 2.文件在拖动区来回拖拽时，不断触发 dragging 事件
       // 3.文件已经在拖动区，并松开鼠标时，触发 dragFinish 事件
@@ -196,21 +194,29 @@
       dropBox.addEventListener("dragover",this.dragging,false)
     },
     watch:{
+      accessKeyId(newVal){
+        if (newVal) this.list(true)
+      },
+      rootDir(newVal){
+        this.prefix = newVal
+      },
       prefix(){
-        this.refresh()
+        this.list(true)
       }
     },
     methods:{
-      list(){
-        if(this.listLoading === true) return;
-        this.loading = this.listLoading = true
+      async list(forceRefresh){
+        this.loading = true
         let that = this
-        this.ossClient.list({
-          'prefix': this.prefix === '/' ? null : this.prefix,
+        await this.ossClient && this.ossClient.list({
+          'prefix': this.prefix === '/' || this.prefix === '' ? null : this.prefix,
           'delimiter': '/',
-          'marker': this.nextMarker
+          'marker': forceRefresh === true ? null : this.nextMarker
         })
           .then(result => {
+            if (forceRefresh) {
+              that.objects = []
+            }
             that.nextMarker = result.nextMarker
             if (result.prefixes && result.prefixes.length > 0) {
               result.prefixes.map(v => that.objects.push({ name: v, size: '', lastModified: '' }))
@@ -226,9 +232,13 @@
             })
           })
           .catch(err => {
-            this.$message.error(err)
+            if(this.$listeners['listObjectsFail']){
+              this.$emit('listObjectsFail',err);
+            }else{
+              this.$message.error(err.toString())
+            }
           })
-          .finally(() => this.loading = this.listLoading = false)
+          .finally(() => this.loading = false)
       },
       dragging(e){
         this.dragCover = true
@@ -341,12 +351,12 @@
           // 分片上传。
           let res = await this.ossClient.multipartUpload(name, file, options);
           this.$emit('uploadSuccess', res)
-          this.refresh()
+          this.list(true)
         } catch (err) {
           if(this.$listeners['uploadFail']){
             this.$emit('uploadFail',err);
           }else{
-            this.$message.error(err)
+            this.$message.error(err.toString())
           }
         }
       },
@@ -365,7 +375,7 @@
             await this.ossClient.deleteMulti(objectsTarget)
             let deletedObjectArr = [...new Set(objectsTarget)]
             deletedObjectArr.map(path => this.$emit('removeSuccess', path))
-            this.refresh()
+            this.list(true)
             this.$message.success('删除成功')
           })
           .catch(err => {
@@ -375,7 +385,7 @@
               if(this.$listeners['removeFail']){
                 this.$emit('removeFail',err);
               }else{
-                this.$message.error(err)
+                this.$message.error(err.toString())
               }
             }
           })
@@ -407,7 +417,7 @@
               this.$emit('renameSuccess',newPath,oldPath);
             }
           }
-          this.refresh()
+          this.list(true)
         }).catch(err => {
           if(err === 'cancel'){
             this.$message.info('取消重命名')
@@ -415,7 +425,7 @@
             if(this.$listeners['renameFail']){
               this.$emit('renameFail',err);
             }else{
-              this.$message.error(err)
+              this.$message.error(err.toString())
             }
           }
         }).finally(() => this.loading = false)
@@ -438,15 +448,15 @@
           try {
             await this.ossClient.put(this.prefix + value + '/', Buffer.from(''));
             this.$message.success("创建文件夹成功");
-            this.refresh()
-          } catch (e) {
-            this.$message.error(e)
+            this.list(true)
+          } catch (err) {
+            this.$message.error(err.toString())
           }
         }).catch(err => {
           if(err === 'cancel'){
             this.$message.info('取消创建文件夹')
           }else{
-            this.$message.error(err)
+            this.$message.error(err.toString())
           }
         });
       },
@@ -456,11 +466,6 @@
         }else{
           return path
         }
-      },
-      refresh(){
-        this.objects = [];
-        this.nextMarker = null
-        this.list()
       },
       uploadFolder(){
         this.$nextTick(() => this.$refs.uploadFolder.$children[0].$refs.input.webkitdirectory = true)
