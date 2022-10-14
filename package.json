@@ -1,8 +1,8 @@
 {
   "name": "oss-file-manager",
-  "description": "基于 Vue、ElementUI、OSS BrowserJS、OSS STS 的OSS管理组件",
+  "description": "基于 Vue、ElementUI、OSS BrowserJS、OSS STS 的OSS在线文件管理器",
   "keywords": ["vue","oss","upload","file manager","element-ui"],
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "hejincheng<335836557@qq.com>",
   "license": "MIT",
   "private": false,

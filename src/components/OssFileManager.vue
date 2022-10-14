@@ -41,7 +41,7 @@
           <el-link v-if="row.size === ''" @click="prefix = row.name">
             {{ row.name.replace(prefix,'').replace('/','') }}
           </el-link>
-          <el-link v-else target="_blank" :href="ossDomain + row.name">{{ row.name.replace(prefix,'') }}</el-link>
+          <el-link v-else target="_blank" @click="preview(row.name)">{{ row.name.replace(prefix,'') }}</el-link>
         </template>
       </el-table-column>
       <el-table-column label="类型/大小" width="150">
@@ -64,7 +64,7 @@
               <el-dropdown-item>
                 <el-button  @click="rename(row.name)" size="mini">重命名</el-button>
               </el-dropdown-item>
-              <el-dropdown-item>
+              <el-dropdown-item v-if="allowDelete">
                 <el-button type="danger"  @click="remove([row.name])" size="mini">删除</el-button>
               </el-dropdown-item>
             </el-dropdown-menu>
@@ -135,6 +135,16 @@
       },
       // 是否允许创建/上传文件夹
       allowUploadFolder: {
+        type: Boolean,
+        default: true,
+      },
+      // 预览地址过期时间，单位：秒
+      previewExpires: {
+        type: Number,
+        default: 86400,
+      },
+      // 是否允许删除文件，该参数仅控制前端隐藏按钮。建议开发者定义好STS权限策略，才能真正阻止用户删除操作
+      allowDelete: {
         type: Boolean,
         default: true,
       },
@@ -469,6 +479,14 @@
       },
       uploadFolder(){
         this.$nextTick(() => this.$refs.uploadFolder.$children[0].$refs.input.webkitdirectory = true)
+      },
+      preview(objectFullPath){
+        let previewUrl = this.ossClient.signatureUrl(objectFullPath, {expires: this.previewExpires})
+        if(this.$listeners['previewObject']){
+          this.$emit('previewObject',previewUrl);
+        }else{
+          window.open(previewUrl);
+        }
       },
       /**
        * Parse the time to string

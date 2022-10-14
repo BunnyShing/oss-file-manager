@@ -3,7 +3,7 @@
 ![NPM](https://img.shields.io/npm/l/oss-file-manager)
 ![npm](https://img.shields.io/npm/v/oss-file-manager)
 
-> 基于 Vue、ElementUI、OSS BrowserJS、OSS STS 的OSS在线浏览器
+> 基于 Vue、ElementUI、OSS BrowserJS、OSS STS 的OSS在线文件管理器
 
 [View on GitHub](https://github.com/BunnyShing/oss-file-manager) 
 
@@ -60,13 +60,16 @@ custom-oss-domain | 自定义OSS域名 | String | - | -
 https | OSS域名是否启用HTTPS | Boolean | true/false | true 
 hidden-root | 是否隐藏根目录 | Boolean | true/false | true 
 allow-upload-folder | 是否允许上传文件夹 | Boolean | true/false | true 
+preview-expires | 预览地址过期时间，单位：秒 | Number | - | 86400 
+allow-delete | 是否允许删除文件，该参数仅控制前端隐藏按钮。建议开发者定义好STS权限策略才能真正阻止用户删除操作 | Boolean | true/false | true 
 before-upload | 自定义上传文件前置函数，入参为上传的文件对象，返回false或返回Promise且被reject，则终止上传 | Function(file) | - | - 
 headers | 上传时的请求头，透传给OSS Client 详见：https://help.aliyun.com/document_detail/383952.html | Object | - | - 
 callback | 异步回调配置，透传给OSS Client 详见：https://help.aliyun.com/document_detail/383952.html | Object | - | -
 
 ## 事件
-| 方法名 | 说明 | 参数 |
+| 事件名 | 说明 | 参数 |
 | :---- | :---- | :---- |
+previewObject | 预览对象回调 | (previewUrl: OSS文件预览地址)
 listObjectsFail | 获取对象列表失败回调 | (err: 错误信息)
 uploadSuccess | 上传成功回调 | (res: OSS API 返回上传结果对象)
 uploadFail | 上传失败回调 | (err: 错误信息)
@@ -74,8 +77,15 @@ removeSuccess | 删除成功回调 | (path: 对象OSS路径)
 removeFail | 删除失败回调 | (err: 错误信息)
 renameSuccess | 重命名成功回调 | (newPath: 对象新OSS路径,oldPath: 对象旧OSS路径)
 renameFail | 重命名失败回调 | (err: 错误信息)
+> 如果定义了previewObject事件，则不会触发文件预览，而是返回OSS对象预览地址给开发者  
+开发者可根据对象地址来进行后续业务处理
 
 ## 更新日志
+### V1.1.1
+本版本主要更新如下：  
+1. 为兼容私有Bucket，预览功能改为使用经过签名后的OSS文件地址
+2. 增加previewObject事件，使开发者可根据用户点击的对象地址实现自己的业务逻辑
+3. 增加了控制删除按钮显隐的Props，但该参数仅控制删除按钮的显隐，建议开发者签发STS时定义好权限策略，才能真正阻止用户删除操作
 ### V1.1.0
 本版本主要更新如下：  
 1. 修正未正确监听OSS相关配置（Access Key Id、Access Key Secret、STS Token之类）的属性变动，导致初始化组件/更新access-key-id时未重载对象列表的bug
